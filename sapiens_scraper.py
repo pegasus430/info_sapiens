@@ -95,7 +95,7 @@ def generate_pdf_from_content(content_html, output_pdf):
 
     options = {
         'encoding': "UTF-8",
-        'enable-local-file-access': "", 
+        'enable-local-file-access': True, 
         'margin-top': '10mm',
         'margin-bottom': '10mm',
         'margin-left': '10mm',
@@ -103,6 +103,8 @@ def generate_pdf_from_content(content_html, output_pdf):
     }
     
     pdfkit.from_string(content_html, "output_content/temp_generated.pdf", options=options, configuration=config)
+    if os.path.exists(output_pdf):
+        os.remove(output_pdf)
     os.rename( "output_content/temp_generated.pdf", output_pdf)
 
 def sanitize_filename(filename):
@@ -121,27 +123,41 @@ def process_each_post(url):
         date = meta_element.find('li').text.strip()
 
         short_name_format = f"{date}_{clean_title}_short.pdf"
-        full_name_format = f"{date}_{clean_title}_full.pdf"
-
+        
         content = soup.find(class_='content')
 
         # Check if there's a downloadable PDF link
-        pdf_link = content.find("a", href=True, text=lambda text: text and ".pdf" in text.lower())
-        if pdf_link:
-            pdf_url = pdf_link['href']
-            pdf_path = f"output_reports/{full_name_format}"
-            if download_pdf(pdf_url, pdf_path):
-                print(f"    Downloaded PDF directly from {pdf_url}")
-            else:
-                print("    Failed to download PDF.")
+        # Find all <a> tags that contain ".pdf" in their href and have an href attribute
+        pdf_links = [
+            a_tag for a_tag in content.find_all("a", href=True)
+            if ".pdf" in a_tag['href'].lower()
+        ]
+        
+        for pdf_link in pdf_links:
+            if pdf_link:
+                full_name_format = f"{date}_{clean_title}_full.pdf"
+                pdf_url = pdf_link['href']
+                pdf_path = f"output_reports/{full_name_format}"
+                if download_pdf(pdf_url, pdf_path):
+                    print(f"    Downloaded PDF directly from {pdf_url}")
+                else:
+                    print("    Failed to download PDF.")
         
         
         
         # Fix relative URLs for images if necessary
         for img in content.find_all("img"):
             if img['src'].startswith("../"):
-                img['src'] = f"https://www.sapiens.com.ua{img['src'][2:]}"
-                
+                img['src'] = f"https://www.sapiens.com.ua/{img['src'][3:]}"
+            
+            if 'height' in img.attrs:
+                del img['height']
+            
+
+        # Loop through all <p> tags within content and remove youtube iframe
+        for p_tag in content.find_all("p"):
+            if p_tag.find("iframe"):
+                p_tag.decompose()
 
         # Extract and structure HTML content for PDF conversion
         
@@ -163,14 +179,12 @@ def main():
 
     # Fetch all publication links
     publication_links = fetch_publication_links()
-
     # Generate PDF for each publication
-    for i, url in enumerate(publication_links, start=1):
+    for i, url in enumerate(publication_links, start=1):    
         print(f" - {i}th URL processing: {url}")
         try:
             process_each_post(url)
-            if i > 1:
-                break
+            
         except Exception as e:
             print(f"Failed to save {url} as PDF: {e}")
 
