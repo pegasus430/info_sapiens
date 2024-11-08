@@ -16,10 +16,9 @@ Website: https://www.sapiens.com.ua/en/publications
  In the command prompt or PowerShell, run the following command:
  ```
  myenv\Scripts\activate
-
  ```
 
- -Install Packages from requirements.
+ - Install Packages from requirements.
  ```
 pip install -r requirements.txt
  ```
