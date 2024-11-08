@@ -33,7 +33,10 @@ def fetch_publication_links():
     return publication_links
 
 def download_pdf(url, pdf_path):
-    pdf_download_url = f"https://www.sapiens.com.ua{url[2:]}"
+    if url[:3] == '../':
+        pdf_download_url = f"https://www.sapiens.com.ua/{url[3:]}"
+    else:
+        pdf_download_url = url
     
     response = requests.get(pdf_download_url)
     if response.status_code == 200:
@@ -118,7 +121,7 @@ def process_each_post(url):
         meta_element = soup.find(class_="post-meta")
         # Extract the title
         title = meta_element.find('h2', class_='title').text
-        clean_title = sanitize_filename(title)
+        clean_title = sanitize_filename(title)[:100]
         # Extract the date
         date = meta_element.find('li').text.strip()
 
@@ -133,18 +136,21 @@ def process_each_post(url):
             if ".pdf" in a_tag['href'].lower()
         ]
         
-        for pdf_link in pdf_links:
+        for i, pdf_link in enumerate(pdf_links, start=1):
             if pdf_link:
-                full_name_format = f"{date}_{clean_title}_full.pdf"
+                full_name_format = f"{date}_{clean_title}_{i}_full.pdf"
                 pdf_url = pdf_link['href']
                 pdf_path = f"output_reports/{full_name_format}"
                 if download_pdf(pdf_url, pdf_path):
                     print(f"    Downloaded PDF directly from {pdf_url}")
                 else:
                     print("    Failed to download PDF.")
+
+    except Exception as e:
+        print(f" error happned while processing the pdf report: {url} - {e}")
         
         
-        
+    try:    
         # Fix relative URLs for images if necessary
         for img in content.find_all("img"):
             if img['src'].startswith("../"):
@@ -167,10 +173,11 @@ def process_each_post(url):
         output_pdf = f"output_content/{short_name_format}"
         generate_pdf_from_content(content_html, output_pdf)
         print(f"    Generated PDF from content and saved as {output_pdf}")
-
-      
+    
     except Exception as e:
-        print(f" error happned while processing the post: {url} - {e}")
+        print(f" error happned while saving the content of the post: {url} - {e}")
+      
+    
 
 def main():
     # Create a directory for storing PDFs if it doesn't exist
