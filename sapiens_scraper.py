@@ -118,6 +118,7 @@ def process_each_post(url):
     try:
         response = requests.get(url)
         soup = BeautifulSoup(response.text, 'html.parser')
+        whole_post_content = soup.find(class_="single-blog-post")
         meta_element = soup.find(class_="post-meta")
         # Extract the title
         title = meta_element.find('h2', class_='title').text
@@ -127,12 +128,11 @@ def process_each_post(url):
 
         short_name_format = f"{date}_{clean_title}_short.pdf"
         
-        content = soup.find(class_='content')
 
         # Check if there's a downloadable PDF link
         # Find all <a> tags that contain ".pdf" in their href and have an href attribute
         pdf_links = [
-            a_tag for a_tag in content.find_all("a", href=True)
+            a_tag for a_tag in whole_post_content.find_all("a", href=True)
             if ".pdf" in a_tag['href'].lower()
         ]
         
@@ -152,7 +152,7 @@ def process_each_post(url):
         
     try:    
         # Fix relative URLs for images if necessary
-        for img in content.find_all("img"):
+        for img in whole_post_content.find_all("img"):
             if img['src'].startswith("../"):
                 img['src'] = f"https://www.sapiens.com.ua/{img['src'][3:]}"
             
@@ -161,13 +161,13 @@ def process_each_post(url):
             
 
         # Loop through all <p> tags within content and remove youtube iframe
-        for p_tag in content.find_all("p"):
+        for p_tag in whole_post_content.find_all("p"):
             if p_tag.find("iframe"):
                 p_tag.decompose()
 
         # Extract and structure HTML content for PDF conversion
         
-        content_html = str(content)
+        content_html = str(whole_post_content)
         
         # Generate PDF from the extracted HTML content
         output_pdf = f"output_content/{short_name_format}"
