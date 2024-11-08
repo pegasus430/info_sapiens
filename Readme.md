@@ -5,7 +5,11 @@ Website: https://www.sapiens.com.ua/en/publications
 
 ## installation
 
- - Needo to install python3.10 or over and pip
+ - Need to install python3.10 or over and pip
+ - Must install ```wkhtmltopdf``` on your windows to convert the PDF files. and add the file path into the system variables. 
+     ```eg: C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe```
+    And replace with your actual path to wkhtmltopdf in the code, at line 8
+
  - make the virtual env
 
  ```
